@@ -17,12 +17,25 @@ services:
         \0  '在吗|你好' : '欢迎使用客服系统，请等待客服回复你~'
         \0  '关键字1|关键字2' : '自动应答语A'
       OPENAI_APIKEY: 
+      OPENAI_BASEURL: "https://api.openai.com/v1"
+      OPENAI_MODEL: "gpt-3.5-turbo"
       OPENAI_PAYLOAD: |
         \0    作为简体中文客服，请始终以温柔、耐心的态度回复所有消息，确保每次交互中用户感受到尊重和理解。
         \0    请仅使用纯文本回复，不得使用其他语言或格式化语法。
         \0    积极倾听用户的问题，耐心询问细节，并提供清晰、详细的回答或指导。
         \0    优先参考提供的内容，以提供准确解答；若知识库无相关信息，再深入思考找到适合的回答。
         \0    在每次互动中，确保为用户提供友好、积极的支持体验。
+      # 数据持久化配置
+      PERSISTENCE_STORAGE_TYPE: "sqlite"
+      PERSISTENCE_DATA_FILE: "data/session_data.db"
+      PERSISTENCE_EXPIRE_DAYS: "14"
+      PERSISTENCE_ASYNC_SAVE_ENABLED: "true"
+      PERSISTENCE_BATCH_INTERVAL: "30"
+      PERSISTENCE_MAX_BATCH_SIZE: "100"
+      PERSISTENCE_AUTO_CLEANUP_ENABLED: "true"
+      PERSISTENCE_CHECK_INTERVAL: "6"
+    volumes:
+      - ./data:/Crisp-Telegram-Bot/data
     networks:
       - network
 

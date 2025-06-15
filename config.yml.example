@@ -11,14 +11,25 @@ crisp:
   # 网站 ID
   website:
 easyimages:
-  apiUrl: "http://127.0.0.1/api/index.php"
-  apiToken: "token"
+  apiUrl: "https://img.131213.xyz/api/upload"
+  apiToken: "your_easyimages_api_token"
+
+cloudflare_r2:
+  endpoint_url: "https://your-account-id.r2.cloudflarestorage.com"
+  access_key_id: "your_r2_access_key_id"
+  secret_access_key: "your_r2_secret_access_key"
+  bucket_name: "your-bucket-name"
+  public_url: "https://your-custom-domain.com"  # 可选：自定义域名或r2.dev URL
 autoreply:
   # 自动关键词回复，你可以复制成多行，每个关键词用 `|` 隔开即可，在 `:` 后输入自动回复内容
   "在吗|你好": "欢迎使用客服系统，请等待客服回复你~"
 openai:
   # APIKey
   apiKey: 
+  # 自定义API基础URL，默认为OpenAI官方API
+  baseUrl: "https://api.openai.com/v1"
+  # 自定义模型名字，默认为gpt-3.5-turbo
+  model: "gpt-3.5-turbo"
   # 预制内容，内容越多token消耗越多，单价越贵
   payload: |
     作为简体中文客服，请始终以温柔、耐心的态度回复所有消息，确保每次交互中用户感受到尊重和理解。
@@ -26,3 +37,26 @@ openai:
     积极倾听用户的问题，耐心询问细节，并提供清晰、详细的回答或指导。
     优先参考提供的内容，以提供准确解答；若知识库无相关信息，再深入思考找到适合的回答。
     在每次互动中，确保为用户提供友好、积极的支持体验。
+
+# 数据持久化配置
+persistence:
+  # 存储类型: json 或 sqlite
+  storage_type: "sqlite"
+  # 数据文件路径
+  data_file: "session_data.db"
+  # 会话过期时间（天）
+  expire_days: 14
+  # 异步保存配置
+  async_save:
+    # 是否启用异步保存
+    enabled: true
+    # 批量保存间隔（秒）
+    batch_interval: 30
+    # 最大批量大小
+    max_batch_size: 100
+  # 自动清理配置
+  auto_cleanup:
+    # 是否启用自动清理
+    enabled: true
+    # 清理检查间隔（小时）
+    check_interval: 6
