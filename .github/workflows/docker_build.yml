@@ -41,13 +41,21 @@ jobs:
       - run: docker buildx inspect --bootstrap
 
       - name: Build image and push(py3.9)
-        run: docker buildx build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:py3.9 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.9/Dockerfile .
+        run: |
+          IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          docker buildx build -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:latest -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:py3.9 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.9/Dockerfile .
 
       - name: Build image and push(py3.10)
-        run: docker buildx build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:py3.10 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.10/Dockerfile .
+        run: |
+          IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          docker buildx build -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:py3.10 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.10/Dockerfile .
 
       - name: Build image and push(py3.11)
-        run: docker buildx build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:py3.11 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.11/Dockerfile .
+        run: |
+          IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          docker buildx build -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:py3.11 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.11/Dockerfile .
 
       - name: Build image and push(py3.12)
-        run: docker buildx build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:py3.12 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.12/Dockerfile .
+        run: |
+          IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          docker buildx build -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:py3.12 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.12/Dockerfile .
