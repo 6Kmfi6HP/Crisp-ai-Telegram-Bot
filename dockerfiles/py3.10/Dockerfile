@@ -2,7 +2,7 @@ FROM python:3.10-alpine AS build
 ADD requirements.txt /build/requirements.txt
 WORKDIR /build
 RUN apk update
-RUN apk add --no-cache --virtual .build-deps git build-base libffi-dev libstdc++
+RUN apk add --no-cache --virtual .build-deps git build-base libffi-dev libstdc++ rust cargo
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r ./requirements.txt
 RUN apk del .build-deps
