@@ -48,7 +48,7 @@ jobs:
           driver-opts: |
             network=host
             image=moby/buildkit:buildx-stable-1
-          config-inline: |
+          buildkitd-config-inline: |
             [worker.oci]
               max-parallelism = 4
             [registry."ghcr.io"]
