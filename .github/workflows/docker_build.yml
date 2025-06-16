@@ -70,6 +70,7 @@ jobs:
             type=ref,event=pr
             type=raw,value=py${{ matrix.python-version }}
             type=raw,value=latest,enable={{is_default_branch}},suffix=-py${{ matrix.python-version }}
+            type=raw,value=latest,enable=${{ is_default_branch && matrix.python-version == '3.12' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
