@@ -12,6 +12,9 @@ on:
       - "**/config.yml.example"
       - "**/.dockerignore"
       - "**/.gitignore"
+  schedule:
+    # 每天凌晨2点运行，保持缓存热度
+    - cron: '0 2 * * *'
 
 env:
   REGISTRY: ghcr.io
@@ -23,6 +26,10 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+      fail-fast: false
 
     steps:
       - name: Checkout
@@ -35,27 +42,47 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup builder
-        run: docker run --privileged --rm tonistiigi/binfmt --install all
-      - run: docker buildx create --name builder --driver docker-container --platform linux/amd64,linux/arm64 --use
-      - run: docker buildx inspect --bootstrap
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+            image=moby/buildkit:buildx-stable-1
+          config-inline: |
+            [worker.oci]
+              max-parallelism = 4
+            [registry."ghcr.io"]
+              mirrors = ["ghcr.io"]
+              http = false
+              insecure = false
 
-      - name: Build image and push(py3.9)
-        run: |
-          IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
-          docker buildx build -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:latest -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:py3.9 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.9/Dockerfile .
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=py${{ matrix.python-version }}
+            type=raw,value=latest,enable={{is_default_branch}},suffix=-py${{ matrix.python-version }}
 
-      - name: Build image and push(py3.10)
-        run: |
-          IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
-          docker buildx build -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:py3.10 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.10/Dockerfile .
-
-      - name: Build image and push(py3.11)
-        run: |
-          IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
-          docker buildx build -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:py3.11 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.11/Dockerfile .
-
-      - name: Build image and push(py3.12)
-        run: |
-          IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
-          docker buildx build -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:py3.12 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.12/Dockerfile .
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./dockerfiles/py${{ matrix.python-version }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=py${{ matrix.python-version }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache-py${{ matrix.python-version }}
+          cache-to: |
+            type=gha,mode=max,scope=py${{ matrix.python-version }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache-py${{ matrix.python-version }},mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+          provenance: false
+          sbom: false

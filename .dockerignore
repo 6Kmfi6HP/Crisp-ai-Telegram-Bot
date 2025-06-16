@@ -1,9 +1,72 @@
+# Git files
 .git
 .gitignore
+.gitattributes
+
+# GitHub workflows and CI/CD
 .github/
+
+# Docker files
 Dockerfile
 .dockerignore
 dockerfiles/
-*.example
 docker-compose.yml
+*.example
+
+# Documentation
+README.md
+LICENSE
+*.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python cache and build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Logs
+*.log
+logs/
+
+# Config files
 config.yml
+
+# Data directory
+data/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.pytest_cache/
+
+# Node modules (if any)
+node_modules/
