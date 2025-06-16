@@ -26,6 +26,13 @@ crisp:
 easyimages:
   apiUrl: ${EasyImages_apiUrl}
   apiToken: ${EasyImages_apiToken}
+
+cloudflare_r2:
+  endpoint_url: "${CLOUDFLARE_R2_ENDPOINT_URL}"
+  access_key_id: "${CLOUDFLARE_R2_ACCESS_KEY_ID}"
+  secret_access_key: "${CLOUDFLARE_R2_SECRET_ACCESS_KEY}"
+  bucket_name: "${CLOUDFLARE_R2_BUCKET_NAME}"
+  public_url: "${CLOUDFLARE_R2_PUBLIC_URL}"
 autoreply:
 ${AUTOREPLY}
 openai:
