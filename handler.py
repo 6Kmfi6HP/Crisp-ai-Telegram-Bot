@@ -211,6 +211,9 @@ async def sendMessage(data):
             flow.append("")
             flow.append(f"💡<b>自动回复</b>：{autoreply}")
         elif openai is not None and session["enableAI"] is True:
+            # 获取用户元数据信息
+            user_metas = getMetas(sessionId)
+            
             # 获取历史消息作为上下文
             try:
                 import tiktoken
@@ -226,11 +229,14 @@ async def sendMessage(data):
                 max_tokens = 4096 if 'gpt-3.5-turbo' in model_name else 8192
                 max_context_tokens = max_tokens - 1000  # 为响应预留1000个token
                 
+                # 构建包含用户信息的系统消息
+                enhanced_payload = f"{payload}\n\n## 当前用户信息\n{user_metas}\n\n请根据以上用户信息提供个性化的专业服务。"
+                
                 history_response = client.website.get_messages_in_conversation(websiteId, sessionId, {})
-                messages = [{"role": "system", "content": payload}]
+                messages = [{"role": "system", "content": enhanced_payload}]
                 
                 # 计算系统消息的token数
-                current_tokens = len(encoding.encode(payload)) + 4  # 4个额外token用于消息格式
+                current_tokens = len(encoding.encode(enhanced_payload)) + 4  # 4个额外token用于消息格式
                 
                 print(f"历史消息API响应类型: {type(history_response)}, 长度: {len(history_response) if isinstance(history_response, list) else 'N/A'}")
                 
@@ -298,8 +304,9 @@ async def sendMessage(data):
             except ImportError:
                 print("tiktoken未安装，使用简化的历史消息处理")
                 # 如果tiktoken未安装，使用简化版本
+                enhanced_payload = f"{payload}\n\n## 当前用户信息\n{user_metas}\n\n请根据以上用户信息提供个性化的专业服务。"
                 history_response = client.website.get_messages_in_conversation(websiteId, sessionId, {})
-                messages = [{"role": "system", "content": payload}]
+                messages = [{"role": "system", "content": enhanced_payload}]
                 
                 if 'data' in history_response:
                     recent_messages = history_response['data'][-5:]  # 只保留最近5条消息
@@ -321,10 +328,11 @@ async def sendMessage(data):
             except Exception as e:
                 print(f"获取历史消息失败，使用无上下文模式: {e}")
                 # 如果获取历史消息失败，回退到原来的无上下文模式
+                enhanced_payload = f"{payload}\n\n## 当前用户信息\n{user_metas}\n\n请根据以上用户信息提供个性化的专业服务。"
                 response = openai.chat.completions.create(
                     model=config['openai'].get('model', 'gpt-3.5-turbo'),
                     messages=[
-                        {"role": "system", "content": payload},
+                        {"role": "system", "content": enhanced_payload},
                         {"role": "user", "content": data["content"]}
                     ],
                     max_tokens=300,  # 客服AI使用较短回复
