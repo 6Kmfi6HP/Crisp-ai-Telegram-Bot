@@ -185,7 +185,12 @@ async def createSession(data):
         print(f"创建新会话: {sessionId}")
     else:
         try:
-            await bot.edit_message_text(metas,groupId,session['messageId'])
+            await bot.edit_message_text(
+                metas,
+                groupId,
+                session['messageId'],
+                reply_markup=changeButton(sessionId, session['enableAI'])
+            )
             # 更新会话的最后活动时间
             persistence.save_session_data(sessionId, session)
             print(f"更新现有会话: {sessionId}")
