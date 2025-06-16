@@ -211,14 +211,126 @@ async def sendMessage(data):
             flow.append("")
             flow.append(f"💡<b>自动回复</b>：{autoreply}")
         elif openai is not None and session["enableAI"] is True:
-            response = openai.chat.completions.create(
-                model=config['openai'].get('model', 'gpt-3.5-turbo'),
-                messages=[
-                    {"role": "system", "content": payload},
-                    {"role": "user", "content": data["content"]}
-                ]
-            )
-            autoreply = response.choices[0].message.content
+            # 获取历史消息作为上下文
+            try:
+                import tiktoken
+                
+                model_name = config['openai'].get('model', 'gpt-3.5-turbo')
+                # 获取对应模型的编码器
+                try:
+                    encoding = tiktoken.encoding_for_model(model_name)
+                except KeyError:
+                    encoding = tiktoken.get_encoding("cl100k_base")  # 默认编码器
+                
+                # 设置token限制（为响应预留空间）
+                max_tokens = 4096 if 'gpt-3.5-turbo' in model_name else 8192
+                max_context_tokens = max_tokens - 1000  # 为响应预留1000个token
+                
+                history_response = client.website.get_messages_in_conversation(websiteId, sessionId, {})
+                messages = [{"role": "system", "content": payload}]
+                
+                # 计算系统消息的token数
+                current_tokens = len(encoding.encode(payload)) + 4  # 4个额外token用于消息格式
+                
+                print(f"历史消息API响应类型: {type(history_response)}, 长度: {len(history_response) if isinstance(history_response, list) else 'N/A'}")
+                
+                # 处理历史消息
+                history_messages = []
+                # Crisp API直接返回消息数组，不是包含data字段的对象
+                if isinstance(history_response, list) and history_response:
+                    print(f"获取到历史消息数量: {len(history_response)}")
+                    
+                    # 过滤并排序历史消息（排除当前消息）
+                    valid_messages = []
+                    current_content = data["content"].strip()
+                    
+                    for msg in history_response:
+                        if (msg.get('type') == 'text' and 
+                            'content' in msg and 
+                            msg['content'].strip() and 
+                            msg['content'].strip() != current_content):  # 排除当前消息
+                            valid_messages.append(msg)
+                    
+                    print(f"有效历史消息数量: {len(valid_messages)}")
+                    
+                    # 按时间顺序处理消息（从最新开始，但插入时保持正确顺序）
+                    for msg in reversed(valid_messages[-20:]):  # 最多取最近20条
+                        role = "assistant" if msg.get('from') == 'operator' else "user"
+                        content = msg['content'].strip()
+                        
+                        # 计算这条消息的token数
+                        msg_tokens = len(encoding.encode(content)) + 4
+                        
+                        # 检查是否超过token限制
+                        if current_tokens + msg_tokens > max_context_tokens:
+                            print(f"Token限制达到，停止添加历史消息")
+                            break
+                        
+                        history_messages.insert(0, {"role": role, "content": content})
+                        current_tokens += msg_tokens
+                        print(f"添加历史消息: {role} - {content[:50]}...")
+                    
+                    messages.extend(history_messages)
+                else:
+                    print("没有获取到历史消息数据或数据格式不正确")
+                
+                # 添加当前用户消息
+                current_msg_tokens = len(encoding.encode(data["content"])) + 4
+                if current_tokens + current_msg_tokens <= max_context_tokens:
+                    messages.append({"role": "user", "content": data["content"]})
+                else:
+                    # 如果当前消息太长，截断历史消息
+                    while len(messages) > 1 and current_tokens + current_msg_tokens > max_context_tokens:
+                        removed_msg = messages.pop(1)  # 保留系统消息，移除最早的历史消息
+                        current_tokens -= len(encoding.encode(removed_msg["content"])) + 4
+                    messages.append({"role": "user", "content": data["content"]})
+                
+                print(f"发送给OpenAI的消息数量: {len(messages)}, 预估token数: {current_tokens + current_msg_tokens}")
+                
+                response = openai.chat.completions.create(
+                    model=model_name,
+                    messages=messages,
+                    max_tokens=min(300, max_tokens - current_tokens - current_msg_tokens),  # 客服AI使用较短回复
+                    temperature=0.7
+                )
+                autoreply = response.choices[0].message.content
+                
+            except ImportError:
+                print("tiktoken未安装，使用简化的历史消息处理")
+                # 如果tiktoken未安装，使用简化版本
+                history_response = client.website.get_messages_in_conversation(websiteId, sessionId, {})
+                messages = [{"role": "system", "content": payload}]
+                
+                if 'data' in history_response:
+                    recent_messages = history_response['data'][-5:]  # 只保留最近5条消息
+                    for msg in recent_messages:
+                        if msg.get('type') == 'text' and 'content' in msg and msg['content'].strip():
+                            role = "assistant" if msg.get('from') == 'operator' else "user"
+                            messages.append({"role": role, "content": msg['content'].strip()})
+                
+                messages.append({"role": "user", "content": data["content"]})
+                
+                response = openai.chat.completions.create(
+                    model=config['openai'].get('model', 'gpt-3.5-turbo'),
+                    messages=messages,
+                    max_tokens=300,  # 客服AI使用较短回复
+                    temperature=0.7
+                )
+                autoreply = response.choices[0].message.content
+                
+            except Exception as e:
+                print(f"获取历史消息失败，使用无上下文模式: {e}")
+                # 如果获取历史消息失败，回退到原来的无上下文模式
+                response = openai.chat.completions.create(
+                    model=config['openai'].get('model', 'gpt-3.5-turbo'),
+                    messages=[
+                        {"role": "system", "content": payload},
+                        {"role": "user", "content": data["content"]}
+                    ],
+                    max_tokens=300,  # 客服AI使用较短回复
+                    temperature=0.7
+                )
+                autoreply = response.choices[0].message.content
             flow.append("")
             flow.append(f"💡<b>自动回复</b>：{autoreply}")
         
