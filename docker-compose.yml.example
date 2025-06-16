@@ -2,7 +2,7 @@ name: crisp-telegram-bot
 
 services:
   bot:
-    image: moefaq/crisp-telegram-bot
+    image: ghcr.io/6kmfi6hp/crisp-ai-telegram-bot:latest
     restart: always
     environment:
       TZ: Asia/Shanghai
