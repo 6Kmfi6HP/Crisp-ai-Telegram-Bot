@@ -12,9 +12,10 @@
 AUTOREPLY=`echo -e "${AUTOREPLY}"`
 OPENAI_PAYLOAD=`echo -e "${OPENAI_PAYLOAD}"`
 
-# if [ ! -e "/Crisp-Telegram-Bot/config.yml" ]; then
-# conver_to_array ${BOT_SEND_ID}
-cat > /Crisp-Telegram-Bot/config.yml << EOF
+# 检查配置文件是否存在，如果存在则跳过环境变量配置
+if [ ! -e "/Crisp-Telegram-Bot/config.yml" ]; then
+    echo "配置文件不存在，使用环境变量生成配置文件..."
+    cat > /Crisp-Telegram-Bot/config.yml << EOF
 bot:
   token: ${BOT_TOKEN}
   groupId: ${BOT_GROUPID}
@@ -47,5 +48,7 @@ persistence:
     enabled: ${PERSISTENCE_AUTO_CLEANUP_ENABLED:-true}
     check_interval: ${PERSISTENCE_CHECK_INTERVAL:-6}
 EOF
-# fi
+else
+    echo "配置文件已存在，忽略环境变量配置"
+fi
 exec "$@"

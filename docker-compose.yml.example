@@ -36,6 +36,8 @@ services:
       PERSISTENCE_CHECK_INTERVAL: "6"
     volumes:
       - ./data:/Crisp-Telegram-Bot/data
+      # 可选：映射配置文件，如果映射了此文件，将忽略上述环境变量配置
+      # - ./config.yml:/Crisp-Telegram-Bot/config.yml
     networks:
       - network
 
